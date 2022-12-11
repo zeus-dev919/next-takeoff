@@ -27,18 +27,6 @@
           }
         }
       } , 10),
-      fetchedProject: {},
-      fetchedMeeting: {},
-      title: "ActionPoint - Meetings",
-      file: {},
-      sections: [],
-      entries: [],
-      highlights: [],
-      attendees: [],
-      createSections: false,
-      totalEntries: null,
-      granularity: null,
-      temperature: 0.5,
       colors: ["ap-orange", "ap-purple", "green-600", "yellow-600", "pink-600", "indigo-600", "purple-600"],
       bgColors: ["ap-light-orange" , "ap-light-purple" , "green-100"],
       attendeesColors: {},
