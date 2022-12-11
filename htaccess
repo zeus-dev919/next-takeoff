@@ -1,0 +1,150 @@
+ data() {
+    return {
+      audioSources: [
+        "http://poc.altadoctrina.ai/audio.mp3"
+      ],
+      results: this.getWords(results),
+      currentPart: 0,
+      currentWord: 0,
+      isWordSprite: true,
+      tick: setInterval(() => {
+        if(this.$refs.player.playing){
+          let current = this.results[this.currentPart].words;
+          if(this.isWordSprite){
+            if(this.getProgress(current[this.currentWord].start_time) < this.$refs.player.progress)
+              this.$refs[`${this.currentPart}words${this.currentWord}`][0].style.color = "red";
+            if(this.getProgress(current[this.currentWord].end_time) < this.$refs.player.progress)
+              this.$refs.player.pause()
+          }else{
+            if(this.getProgress(current[this.currentWord].start_time) < this.$refs.player.progress){
+              this.$refs[`${this.currentPart}words${this.currentWord}`][0].style.color = "red";
+                if(this.currentWord != current.length - 1)
+                this.currentWord++;
+            }
+            if(this.getProgress(this.results[this.currentPart].end_time) < this.$refs.player.progress){
+              this.$refs.player.pause();
+            }
+          }
+        }
+      } , 10),
+      fetchedProject: {},
+      fetchedMeeting: {},
+      title: "ActionPoint - Meetings",
+      file: {},
+      sections: [],
+      entries: [],
+      highlights: [],
+      attendees: [],
+      createSections: false,
+      totalEntries: null,
+      granularity: null,
+      temperature: 0.5,
+      colors: ["ap-orange", "ap-purple", "green-600", "yellow-600", "pink-600", "indigo-600", "purple-600"],
+      bgColors: ["ap-light-orange" , "ap-light-purple" , "green-100"],
+      attendeesColors: {},
+      orderedEntries: [],
+      orderedEntriesDefault: [],
+      displayMeetings: true,
+      oldEntry: "",
+    }
+  },
+  created() {
+    this.parseMeeting(this.meeting)
+  },
+  updated() {
+    window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
+      alert("Error occured: " + errorMsg);//or any message
+      return false;
+    }
+    window.addEventListener("error", function (e) {
+      alert("Error occurred: " + e.error.message);
+      return false;
+    })
+    window.addEventListener('unhandledrejection', function (e) {
+      alert("Error occurred: " + e.reason.message);
+    })
+  },
+  computed: {
+    ...mapGetters({
+      currentProject: 'menu/getProject',
+      meeting: 'menu/getMeeting',
+    }),
+  },
+  methods: {
+    ...mapActions({
+      // setProject: 'menu/setProject',
+      setMeeting: 'menu/setMeeting'
+    }),
+    getProjectFromApi() {
+      // fetch(`http://actionpoint.vps.webdock.cloud:5000/getProjectByName/${this.$route.params.project}`, {
+      //   method: "GET",
+      //   headers: {
+      //     "Authorization": "Bearer " + JSON.parse(this.getCookie("authentication-cookie")).auth.access_token
+      //   }
+      // })
+      //   .then((response) => {
+      //     return response.json()
+      //   })
+      //   .then((data) => {
+      //     this.fetchedProject = data[0]
+      //     this.setProject(this.fetchedProject)
+      //     this.setMeeting(this.fetchedProject.meetings[this.$route.params.id])
+      //     this.parseMeeting(this.meeting)
+      //   })
+      //   .catch((error) => {
+      //     console.log(error)
+      //   })
+      this.projects = [{
+        name:"AAAAA",
+      }]
+    },
+    getWords(results){
+      let words = [];
+      let segments = results.speaker_labels.segments;
+      let items = results.items;
+      for(let i = 0; i < segments.length; i++){
+        let data = [];
+        let num = 0;
+        while(num != segments[i].items.length){
+          if(items[0].type == "pronunciation"){
+            num++;
+          }
+          data.push(items[0])
+          items.shift();
+          if(num == segments[i].items.length && items[0].type != "pronunciation"){
+            data.push(items[0])
+            items.shift()
+          }
+        }
+        words.push({
+          start_time: segments[i].start_time,
+          end_time: segments[i].end_time,
+          words:data
+        })
+      }
+      return [words[0] , words[1] , words[2]];
+    },
+    getProgress(time){
+      return time / this.$refs.player.duration;
+    },
+    click(id , index) {
+      console.log(this.results)
+      this.isWordSprite = true;
+      this.results.forEach((item , idx)=> {
+        item.words.forEach((word , iidx) => {
+          this.$refs[`${idx}words${iidx}`][0].style.color = "black"
+          console.log(`${idx}words${iidx}`)
+
+        })
+      })
+      this.currentPart = id;
+      if(index == -1){
+        this.currentWord = 0;
+        this.isWordSprite = false;
+      }else this.currentWord = index;
+      this.$refs.player.setProgress(this.getProgress(this.results[this.currentPart].words[this.currentWord].start_time));
+      if(!this.$refs.player.playing) this.$refs.player.togglePlayback()
+    },
+    changeMeeting(index) {
+      this.$router.push({ path: `/projects/${(this.currentProject.name)}/meetings/${index}` })
+    },
